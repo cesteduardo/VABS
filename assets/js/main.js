@@ -1,4 +1,4 @@
-/* VABS Company — comportamento da home */
+/* VABS Company · comportamento da home */
 (() => {
   'use strict';
 
@@ -19,7 +19,7 @@
     ['O que é o Método V.A.B.S.?',
      'É a estruturação comercial completa em 90 dias em quatro pilares: Visão (gestão e números), Aquisição (demanda qualificada), Base (CRM e follow-up) e Sistema (playbook, script e time treinado).'],
     ['Por que o tráfego é a última etapa?',
-     'Porque o dinheiro não some no anúncio, some depois dele. Primeiro arrumamos visão, base e sistema. Só então abrimos a torneira do tráfego — senão você paga para perder lead mais rápido.'],
+     'Porque o dinheiro não some no anúncio, some depois dele. Primeiro arrumamos visão, base e sistema. Só então abrimos a torneira do tráfego, senão você paga para perder lead mais rápido.'],
     ['Qual o valor mínimo para começar?',
      'A partir de R$ 2.500 por mês. Montar esse time dentro de casa (gestor de tráfego, designer, editor, consultor comercial, CRM e encargos) custa perto de R$ 18 mil por mês.'],
     ['Em quanto tempo vejo resultado?',
@@ -102,8 +102,10 @@
   /* ---------- rolagem suave ---------- */
   document.addEventListener('click', (ev) => {
     const a = ev.target.closest('a[href^="#"]');
-    if (!a) return;
-    const alvo = document.querySelector(a.getAttribute('href'));
+    if (!a || a.dataset.legal) return;
+    const href = a.getAttribute('href');
+    if (href.length < 2) return;                 // "#" puro não é âncora
+    const alvo = document.querySelector(href);
     if (!alvo) return;
     ev.preventDefault();
     const topo = alvo.getBoundingClientRect().top + scrollY - 60;

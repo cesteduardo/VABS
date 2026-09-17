@@ -1,4 +1,4 @@
-/* VABS Company — Raio-X V.A.B.S. (diagnóstico em 6 etapas) */
+/* VABS Company · Raio-X V.A.B.S. (diagnóstico em 6 etapas) */
 (() => {
   'use strict';
 
@@ -42,23 +42,23 @@
   ];
 
   const PILARES = {
-    V: { nome: 'Visão — meta e números',
+    V: { nome: 'Visão · meta e números',
          fix: 'Começamos pela matemática reversa: quantos leads, a que custo e com que taxa de fechamento a sua meta exige. Daí sai o painel de números e a reunião mensal de resultado.' },
-    A: { nome: 'Aquisição — demanda qualificada',
+    A: { nome: 'Aquisição · demanda qualificada',
          fix: 'Meta e Google Ads com filtro de qualificação, landing page e remarketing. Essa é a última etapa: a torneira só abre depois que a estrutura está de pé.' },
-    B: { nome: 'Base — CRM e follow-up',
+    B: { nome: 'Base · CRM e follow-up',
          fix: 'CRM implantado e integrado em até 25 dias, automação de follow-up e dashboard por vendedor. É aqui que para de sumir o orçamento que não fechou.' },
-    S: { nome: 'Sistema — time e cadência',
+    S: { nome: 'Sistema · time e cadência',
          fix: 'Playbook, script, cadência de follow-up e banco de objeções, com o time comercial treinado em até 40 dias. Todo vendedor passa a vender do mesmo jeito.' }
   };
 
   const ETAPAS = [
-    'Faltam 5 etapas — cerca de 75 segundos',
-    'Faltam 4 etapas — cerca de 60 segundos',
-    'Faltam 3 etapas — cerca de 45 segundos',
-    'Faltam 2 etapas — cerca de 30 segundos',
-    'Falta 1 etapa — cerca de 30 segundos',
-    'Última etapa — menos de 30 segundos'
+    'Faltam 5 etapas, cerca de 75 segundos',
+    'Faltam 4 etapas, cerca de 60 segundos',
+    'Faltam 3 etapas, cerca de 45 segundos',
+    'Faltam 2 etapas, cerca de 30 segundos',
+    'Falta 1 etapa, cerca de 30 segundos',
+    'Última etapa, menos de 30 segundos'
   ];
 
   const TOTAL = 6;
@@ -145,7 +145,7 @@
 
       <div class="rx-demo" style="margin:30px 0 0;max-width:none">
         <span class="mono-label">Raio-X V.A.B.S.</span>
-        <p class="small" style="margin:10px 0 18px">Seu resultado está pronto — preencha abaixo para desbloquear</p>
+        <p class="small" style="margin:10px 0 18px">Seu resultado está pronto. Preencha abaixo para desbloquear</p>
         <div class="rx-row"><span>Nota do comercial (0 a 40)</span><span class="chip chip--ok">Pronto</span></div>
         <div class="rx-row"><span>Diagnóstico dos 4 pilares</span><span class="chip chip--ok">Pronto</span></div>
         <div class="rx-row"><span>Plano de prioridades</span><span class="chip chip--ok">Pronto</span></div>
@@ -165,30 +165,18 @@
           <input id="f-emp" name="empresa" type="text" autocomplete="organization" placeholder="Razão social ou nome fantasia" required>
         </div>
         <div class="f-field">
-          <label for="f-mail">E-mail (opcional)</label>
-          <input id="f-mail" name="email" type="email" autocomplete="email" placeholder="voce@empresa.com.br">
+          <label for="f-mail">E-mail *</label>
+          <input id="f-mail" name="email" type="email" inputmode="email" autocomplete="email" placeholder="voce@empresa.com.br" required>
         </div>
         <button class="btn btn--lg btn--block" type="submit">Ver meu resultado <span class="arw">→</span></button>
       </form>
       <p class="f-note">Não enviamos spam. Você pode cancelar quando quiser.</p>`;
     card.appendChild(bloco);
 
-    /* máscara de WhatsApp */
-    const zap = bloco.querySelector('#f-zap');
-    zap.addEventListener('input', () => {
-      const d = zap.value.replace(/\D/g, '').slice(0, 11);
-      zap.value = d.length <= 2 ? d
-        : d.length <= 6 ? `(${d.slice(0, 2)}) ${d.slice(2)}`
-        : d.length <= 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
-        : `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-    });
-
-    bloco.querySelector('#f-lead').addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      const form = ev.currentTarget;
-      if (!form.checkValidity()) { form.reportValidity(); return; }
-
+    /* validação: sanitiza na digitação e na colagem, valida antes de enviar */
+    validarFormulario(bloco.querySelector('#f-lead'), (form) => {
       const lead = Object.fromEntries(new FormData(form).entries());
+      lead.whatsapp = soDigitos(form.querySelector('#f-zap').value);
       lead.respostas = respostas.map((r, i) => ({ pergunta: PERGUNTAS[i].q, resposta: r.label }));
       lead.nota = notaTotal();
       lead.criadoEm = new Date().toISOString();
@@ -198,6 +186,156 @@
       btn.textContent = 'Calculando…';
 
       enviar(lead).finally(mostrarResultado);
+    });
+  }
+
+  /* ==========================================================================
+     Validação do formulário
+     ========================================================================== */
+
+  const soDigitos = (v) => String(v).replace(/\D/g, '');
+
+  /* DDDs que existem no Brasil */
+  const DDDS = new Set([
+    11,12,13,14,15,16,17,18,19,21,22,24,27,28,31,32,33,34,35,37,38,
+    41,42,43,44,45,46,47,48,49,51,53,54,55,61,62,63,64,65,66,67,68,69,
+    71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96,97,98,99
+  ]);
+
+  /* Nome: letras (com acento), espaço, apóstrofo e hífen. Nada mais entra. */
+  const limparNome = (v) => v
+    .replace(/[^\p{L}\p{M}\s'’-]/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^\s+/, '');
+
+  /* Empresa: aceita número, porque "Padaria 2 Irmãos" é nome legítimo.
+     Fora ficam emoji, símbolo e pontuação que não aparece em razão social. */
+  const limparEmpresa = (v) => v
+    .replace(/[^\p{L}\p{M}\p{N}\s&.,'’\-/]/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^\s+/, '');
+
+  /* Telefone: tira o código do país só quando ele é inequivocamente código do
+     país. O DDD 55 é preservado, porque 55 9xxxx-xxxx tem 11 dígitos e para. */
+  function normalizarTelefone(bruto) {
+    const temMais = /\+\s*5\s*5/.test(bruto);
+    let d = soDigitos(bruto);
+    if (d.startsWith('55') && (temMais || d.length > 11)) d = d.slice(2);
+    return d.slice(0, 11);
+  }
+
+  const mascaraTelefone = (d) =>
+    d.length <= 2 ? d
+    : d.length <= 6 ? `(${d.slice(0, 2)}) ${d.slice(2)}`
+    : d.length <= 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+    : `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+
+  /* limpa o campo mantendo o cursor onde o usuário deixou */
+  function aplicar(campo, limpar) {
+    const antes = campo.value;
+    const cursor = campo.selectionStart ?? antes.length;
+    const depois = limpar(antes);
+    if (depois === antes) return;
+    const removidosAntesDoCursor = antes.slice(0, cursor).length - limpar(antes.slice(0, cursor)).length;
+    campo.value = depois;
+    const novo = Math.max(0, cursor - removidosAntesDoCursor);
+    try { campo.setSelectionRange(novo, novo); } catch (e) { /* campo sem seleção */ }
+  }
+
+  function erroDe(campo) {
+    const v = campo.value.trim();
+    if (!v) return 'Campo obrigatório.';
+
+    if (campo.id === 'f-nome') {
+      if (v.length < 3) return 'Escreva o seu nome completo.';
+      if (!/^[\p{L}\p{M}]+(?:[\s'’-][\p{L}\p{M}]+)+$/u.test(v)) return 'Escreva nome e sobrenome, só com letras.';
+      return '';
+    }
+    if (campo.id === 'f-emp') {
+      if (v.length < 2) return 'Escreva o nome da empresa.';
+      return '';
+    }
+    if (campo.id === 'f-zap') {
+      const d = soDigitos(v);
+      if (d.length < 10) return 'Telefone incompleto. Use DDD e número.';
+      if (!DDDS.has(Number(d.slice(0, 2)))) return 'DDD inexistente.';
+      if (d.length === 11 && d[2] !== '9') return 'Celular com 9 dígitos começa com 9.';
+      return '';
+    }
+    if (campo.id === 'f-mail') {
+      if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v)) return 'E-mail inválido.';
+      return '';
+    }
+    return '';
+  }
+
+  function mostrarErro(campo, msg) {
+    let alvo = campo.parentElement.querySelector('.f-err');
+    if (!alvo) {
+      alvo = document.createElement('p');
+      alvo.className = 'f-err';
+      alvo.id = campo.id + '-err';
+      alvo.setAttribute('role', 'alert');
+      campo.parentElement.appendChild(alvo);
+    }
+    alvo.textContent = msg;
+    campo.parentElement.classList.toggle('is-bad', !!msg);
+    campo.setAttribute('aria-invalid', msg ? 'true' : 'false');
+    if (msg) campo.setAttribute('aria-describedby', alvo.id);
+    else campo.removeAttribute('aria-describedby');
+  }
+
+  function validarFormulario(form, aoEnviar) {
+    const nome = form.querySelector('#f-nome');
+    const emp = form.querySelector('#f-emp');
+    const zap = form.querySelector('#f-zap');
+    const campos = [...form.querySelectorAll('input')];
+
+    /* digitação e colagem passam pelo mesmo filtro: o evento input dispara nos dois */
+    nome.addEventListener('input', () => aplicar(nome, limparNome));
+    emp.addEventListener('input', () => aplicar(emp, limparEmpresa));
+    zap.addEventListener('input', () => {
+      const cursorNoFim = (zap.selectionStart ?? 0) >= zap.value.length;
+      const d = normalizarTelefone(zap.value);
+      zap.value = mascaraTelefone(d);
+      if (!cursorNoFim) { try { zap.setSelectionRange(zap.value.length, zap.value.length); } catch (e) {} }
+    });
+    zap.addEventListener('keydown', (ev) => {
+      if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.key.length > 1) return;
+      if (!/[0-9]/.test(ev.key)) ev.preventDefault();   // letra e símbolo nem aparecem
+    });
+
+    campos.forEach((c) => {
+      c.addEventListener('blur', (ev) => {
+        /* Sair do campo indo para o botão de enviar não pode inserir a
+           mensagem de erro: ela empurraria o botão para longe do dedo
+           entre o toque e o clique. O submit mostra os erros de qualquer jeito. */
+        if (ev.relatedTarget && ev.relatedTarget.type === 'submit') return;
+        mostrarErro(c, erroDe(c));
+      });
+      c.addEventListener('input', () => {
+        if (c.parentElement.classList.contains('is-bad')) mostrarErro(c, erroDe(c));
+      });
+    });
+
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      nome.value = limparNome(nome.value).trim();
+      emp.value = limparEmpresa(emp.value).trim();
+      zap.value = mascaraTelefone(normalizarTelefone(zap.value));
+
+      let primeiroRuim = null;
+      campos.forEach((c) => {
+        const msg = erroDe(c);
+        mostrarErro(c, msg);
+        if (msg && !primeiroRuim) primeiroRuim = c;
+      });
+      if (primeiroRuim) {
+        primeiroRuim.focus();
+        primeiroRuim.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return;
+      }
+      aoEnviar(form);
     });
   }
 
@@ -231,7 +369,7 @@
 
     $('res-nota').textContent = nota;
     $('res-frase').textContent =
-      nota >= 30 ? 'Sua estrutura já está de pé. O ganho agora vem de afinar a máquina — e só então abrir a torneira do tráfego.'
+      nota >= 30 ? 'Sua estrutura já está de pé. O ganho agora vem de afinar a máquina, e só então abrir a torneira do tráfego.'
       : nota >= 18 ? 'Você tem parte da estrutura, mas ainda perde venda no meio do caminho. Dá pra arrumar dentro de um ciclo de 90 dias.'
       : 'Hoje o seu comercial depende de sorte e de memória. É exatamente esse cenário que o Método V.A.B.S. resolve em 90 dias.';
 
